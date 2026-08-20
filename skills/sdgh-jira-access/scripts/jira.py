@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Direct Jira Server/Data Center REST API CLI for the jira-api Skill."""
+"""Direct Jira Server/Data Center REST API CLI for the sdgh-jira-access Skill."""
 
 import argparse
 import base64
@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.request
 
 
-DEFAULT_CONFIG = Path.home() / ".config" / "jira-api-skill" / "config.json"
+DEFAULT_CONFIG = Path.home() / ".config" / "sdgh-jira-access" / "config.json"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*-\d+$", re.IGNORECASE)
 
 
@@ -473,7 +473,7 @@ def ask_macos_dialog(prompt, hidden=False):
     script = (
         f'text returned of (display dialog "{prompt}" default answer ""'
         f'{hidden_clause} buttons {{"取消", "继续"}} default button "继续"'
-        ' with title "Jira API 配置")'
+        ' with title "SDGH Jira Access 配置")'
     )
     try:
         result = subprocess.run(
@@ -506,7 +506,7 @@ def setup(url, username=None, gui=False, config_path=None):
     if not identity.get("active"):
         raise JiraError("Jira 账号未处于启用状态")
     host = urllib.parse.urlparse(url).hostname or "jira"
-    service = f"jira-api-skill:{host}"
+    service = f"sdgh-jira-access:{host}"
     subprocess.run(
         [
             "/usr/bin/security", "add-generic-password", "-U",

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SDGH Jira Access"
+  short_description: "直接使用本人 Jira 身份查询、创建和修改工单"
+  default_prompt: "使用 $sdgh-jira-access 查询我最近负责的 Jira 工单。"

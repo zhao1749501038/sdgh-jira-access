@@ -1,4 +1,4 @@
-# Jira API Skill
+# SDGH Jira Access
 
 一个供 Codex 使用的简单 Jira Skill。Skill 内置 Python 脚本，直接调用自托管 Jira Server 或 Data Center REST API，支持查询、详情、创建、修改、评论、指派和状态流转，不需要安装 MCP 服务。
 
@@ -7,7 +7,7 @@
 将下面整句话发给 Codex，并把 Jira 地址替换成公司实际地址：
 
 ```text
-请使用 $skill-installer 安装并继续配置这个 Jira API Skill，不要在 Skill 安装完成后停止；Jira 地址为 <公司 Jira 地址>：https://github.com/zhao1749501038/jira-api-skill/tree/main/skills/jira-api
+请使用 $skill-installer 安装并继续配置这个 SDGH Jira Access Skill，不要在 Skill 安装完成后停止；Jira 地址为 <公司 Jira 地址>：https://github.com/zhao1749501038/sdgh-jira-access/tree/main/skills/sdgh-jira-access
 ```
 
 Codex 会安装 Skill，并通过 macOS 系统弹窗询问本人 Jira 用户名和密码。密码框为隐藏输入，密码只保存到本人 macOS 钥匙串，不进入聊天、Skill 或 Git 仓库。
@@ -38,6 +38,6 @@ Codex 会安装 Skill，并通过 macOS 系统弹窗询问本人 Jira 用户名�
 ## 测试
 
 ```bash
-python3 -m unittest discover -s skills/jira-api/tests -v
-python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/jira-api
+python3 -m unittest discover -s skills/sdgh-jira-access/tests -v
+python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/sdgh-jira-access
 ```

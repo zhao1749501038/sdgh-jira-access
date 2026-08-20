@@ -1,10 +1,10 @@
 ---
-name: jira-api
+name: sdgh-jira-access
 description: >-
   通过 Skill 内置脚本直接调用自托管 Jira Server 或 Data Center REST API，使用当前用户身份查询、读取、创建、修改、评论、指派和流转工单。用户提到 Jira 单号、我负责的 Jira、创建 Jira、修改字段或状态时使用。不依赖 MCP、Web Access、浏览器自动化或 Computer Use。
 ---
 
-# Jira API
+# SDGH Jira Access
 
 通过 `scripts/jira.py` 直接调用 Jira REST API。这个 Skill 自带运行代码，不安装 MCP 服务。
 

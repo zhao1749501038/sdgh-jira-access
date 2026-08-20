@@ -1,4 +1,16 @@
-# Evolution — jira-api
+# Evolution — sdgh-jira-access
+
+## v1.1 — 2026-08-20
+
+**改动内容**：
+- Skill 技术名称从 `jira-api` 改为 `sdgh-jira-access`，界面显示名改为 `SDGH Jira Access`。
+- 同步更新源目录、Codex 安装入口、配置目录、钥匙串服务名、关联 Skill 引用和 GitHub 分发地址。
+
+**改动原因**：
+用户希望名称直接体现公司 SDGH Jira 的访问用途，便于安装后识别和调用。
+
+**效果评估**：
+新名称下的 Skill 结构校验、5 个自动化测试和本人身份查询已通过；待完成 GitHub 推送、远端安装和旧名称残留检查。
 
 ## v1.0 — 2026-08-20
 
