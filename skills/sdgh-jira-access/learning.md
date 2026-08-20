@@ -14,7 +14,8 @@
 - Windows 改为 Python 直接调用系统 DPAPI 加密，不把 PowerShell 作为安全保存凭据的前提。
 
 **验证结果**：
-- 待完成自动化测试、Windows CI 和远端安装验证。
+- 12 项自动化测试中 11 项通过，1 项 Windows DPAPI 往返测试因当前不是 Windows 而跳过；Skill 结构校验、macOS 本人身份回读、GitHub 远端全新安装和远端测试通过。
+- 当前没有 Windows 实机，首位同事安装时继续验证系统窗口和终端交互体验。
 
 ## 样例 4 — 2026-08-20
 
