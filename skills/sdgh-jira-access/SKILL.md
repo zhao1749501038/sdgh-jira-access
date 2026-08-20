@@ -20,7 +20,7 @@ description: >-
 <Python命令> scripts/jira.py whoami
 ```
 
-尚未配置时，读取 [references/安装与分享.md](references/安装与分享.md)。用户明确要求安装并配置本 Skill 时，可连续完成安装和身份配置；账号和密码由本人在 Windows 或 macOS 系统凭据窗口输入，密码框隐藏。
+尚未配置时，读取 [references/安装与分享.md](references/安装与分享.md)。用户明确要求安装并配置本 Skill 时，可连续完成安装和身份配置；优先由本人在 Windows 或 macOS 系统凭据窗口输入。系统窗口不可用时自动切换到终端输入，密码保持隐藏，不能要求用户把密码发送到聊天。
 
 `whoami` 返回的用户不是当前使用者时停止写入。Windows 密码由当前用户的 DPAPI 加密后保存，macOS 密码保存在本人钥匙串；明文密码不写入 Skill、Git、配置文件、命令行或聊天。
 

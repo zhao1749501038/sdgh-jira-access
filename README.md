@@ -10,7 +10,7 @@
 请使用 $skill-installer 安装并继续配置这个 SDGH-jira-access Skill，不要在 Skill 安装完成后停止：https://github.com/zhao1749501038/sdgh-jira-access/tree/main/skills/sdgh-jira-access
 ```
 
-Codex 会安装 Skill，自动识别电脑上可用的 Python 3 命令，并通过 Windows 或 macOS 系统凭据窗口询问本人 Jira 用户名和密码。用户不需要填写 Python 路径，密码也不会进入聊天、Skill 或 Git 仓库。
+Codex 会安装 Skill，自动识别电脑上可用的 Python 3 命令，并优先通过 Windows 或 macOS 系统凭据窗口询问本人 Jira 用户名和密码。系统窗口无法启动时会自动切换到终端输入，密码仍然隐藏。用户不需要填写 Python 路径，也不需要把密码发送到聊天。
 
 ## 使用条件
 
@@ -32,7 +32,7 @@ Codex 会安装 Skill，自动识别电脑上可用的 Python 3 命令，并通�
 ## 安全说明
 
 - 仓库包含公司 Jira 基础地址，不包含账号、密码、Token、项目编号或自定义字段映射。
-- Windows 密码由当前用户的 DPAPI 加密保存；macOS 密码保存在本人钥匙串。配置文件不保存明文密码。
+- Windows 由 Python 直接调用当前用户的 DPAPI 加密密码，不依赖 PowerShell 完成加密；macOS 密码保存在本人钥匙串。配置文件不保存明文密码。
 - 所有写操作都要求显式确认参数，缺少时脚本会在本地拒绝执行。
 - 当前不支持删除工单和上传附件。
 

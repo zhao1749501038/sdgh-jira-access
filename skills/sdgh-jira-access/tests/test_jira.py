@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -89,6 +90,56 @@ class JiraApiTests(unittest.TestCase):
         self.assertEqual(payload["password_dpapi"], "encrypted-value")
         self.assertNotIn("password", payload)
         self.assertIn("Windows DPAPI", result["password_storage"])
+
+    def test_unavailable_system_prompt_falls_back_to_terminal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / "config.json"
+            with (
+                mock.patch.object(
+                    jira,
+                    "ask_windows_credentials",
+                    side_effect=jira.CredentialPromptUnavailable("窗口不可用"),
+                ),
+                mock.patch.object(
+                    jira,
+                    "ask_terminal_credentials",
+                    return_value=("demo", "secret"),
+                ) as terminal_prompt,
+                mock.patch.object(
+                    jira, "whoami", return_value={"username": "demo", "active": True}
+                ),
+                mock.patch.object(
+                    jira, "protect_windows_secret", return_value="encrypted-value"
+                ),
+            ):
+                jira.setup(
+                    gui=True,
+                    config_path=config_path,
+                    system_name="nt",
+                    platform_name="win32",
+                )
+        terminal_prompt.assert_called_once_with(None)
+
+    def test_cancelled_system_prompt_does_not_continue_to_terminal(self):
+        with (
+            mock.patch.object(
+                jira,
+                "ask_windows_credentials",
+                side_effect=jira.CredentialPromptCancelled("用户取消"),
+            ),
+            mock.patch.object(jira, "ask_terminal_credentials") as terminal_prompt,
+        ):
+            with self.assertRaisesRegex(jira.JiraError, "取消"):
+                jira.setup(gui=True, system_name="nt", platform_name="win32")
+        terminal_prompt.assert_not_called()
+
+    @unittest.skipUnless(os.name == "nt", "Windows DPAPI 仅在 Windows CI 运行")
+    def test_windows_dpapi_round_trip(self):
+        ciphertext = jira.protect_windows_secret("测试-password-123")
+        self.assertNotIn("测试-password-123", ciphertext)
+        self.assertEqual(
+            jira.unprotect_windows_secret(ciphertext), "测试-password-123"
+        )
 
     def test_issue_key_validation(self):
         self.assertEqual(jira.issue_key("demo-12"), "DEMO-12")
