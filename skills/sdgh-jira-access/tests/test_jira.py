@@ -36,6 +36,11 @@ def issue(key="DEMO-1", status="待处理"):
 
 
 class JiraApiTests(unittest.TestCase):
+    def test_setup_uses_company_default_url(self):
+        parser = jira.parser_definition()
+        args = parser.parse_args(["setup", "--gui"])
+        self.assertEqual(args.url, "https://21tb-jira.21tb.com")
+
     def test_issue_key_validation(self):
         self.assertEqual(jira.issue_key("demo-12"), "DEMO-12")
         with self.assertRaises(jira.JiraError):

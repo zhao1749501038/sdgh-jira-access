@@ -6,7 +6,7 @@ description: >-
 
 # SDGH-jira-access
 
-通过 `scripts/jira.py` 直接调用 Jira REST API。这个 Skill 自带运行代码，不安装 MCP 服务。
+通过 `scripts/jira.py` 直接调用 Jira REST API，默认连接 `https://21tb-jira.21tb.com`。这个 Skill 自带运行代码，不安装 MCP 服务。
 
 ## 身份和配置
 

@@ -17,6 +17,7 @@ import urllib.request
 
 
 DEFAULT_CONFIG = Path.home() / ".config" / "sdgh-jira-access" / "config.json"
+DEFAULT_JIRA_URL = "https://21tb-jira.21tb.com"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*-\d+$", re.IGNORECASE)
 
 
@@ -487,7 +488,7 @@ def ask_macos_dialog(prompt, hidden=False):
     return result.stdout.rstrip("\r\n")
 
 
-def setup(url, username=None, gui=False, config_path=None):
+def setup(url=DEFAULT_JIRA_URL, username=None, gui=False, config_path=None):
     if sys.platform != "darwin" or not Path("/usr/bin/security").exists():
         raise JiraError("当前一键配置仅支持 macOS")
     if not username:
@@ -569,7 +570,10 @@ def parser_definition():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     setup_parser = subparsers.add_parser("setup", help="配置本人 Jira 身份")
-    setup_parser.add_argument("--url", required=True)
+    setup_parser.add_argument(
+        "--url", default=DEFAULT_JIRA_URL,
+        help=f"Jira 地址，默认 {DEFAULT_JIRA_URL}",
+    )
     setup_parser.add_argument("--username")
     setup_parser.add_argument("--gui", action="store_true")
 
