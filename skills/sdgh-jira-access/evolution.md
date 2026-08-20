@@ -3,7 +3,7 @@
 ## v1.1 — 2026-08-20
 
 **改动内容**：
-- Skill 技术名称从 `jira-api` 改为 `sdgh-jira-access`，界面显示名改为 `SDGH Jira Access`。
+- Skill 技术名称从 `jira-api` 改为 `sdgh-jira-access`，界面显示名改为 `SDGH-jira-access`。
 - 同步更新源目录、Codex 安装入口、配置目录、钥匙串服务名、关联 Skill 引用和 GitHub 分发地址。
 
 **改动原因**：

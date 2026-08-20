@@ -473,7 +473,7 @@ def ask_macos_dialog(prompt, hidden=False):
     script = (
         f'text returned of (display dialog "{prompt}" default answer ""'
         f'{hidden_clause} buttons {{"取消", "继续"}} default button "继续"'
-        ' with title "SDGH Jira Access 配置")'
+        ' with title "SDGH-jira-access 配置")'
     )
     try:
         result = subprocess.run(
