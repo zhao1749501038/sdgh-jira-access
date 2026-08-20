@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import ssl
 import subprocess
 import sys
@@ -16,13 +17,74 @@ import urllib.parse
 import urllib.request
 
 
-DEFAULT_CONFIG = Path.home() / ".config" / "sdgh-jira-access" / "config.json"
+def default_config_path(os_name=None, environ=None, home=None):
+    current_os = os_name or os.name
+    current_env = environ if environ is not None else os.environ
+    if current_os == "nt" and current_env.get("APPDATA"):
+        return Path(current_env["APPDATA"]) / "sdgh-jira-access" / "config.json"
+    return Path(home or Path.home()) / ".config" / "sdgh-jira-access" / "config.json"
+
+
+DEFAULT_CONFIG = default_config_path()
 DEFAULT_JIRA_URL = "https://21tb-jira.21tb.com"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*-\d+$", re.IGNORECASE)
 
 
 class JiraError(Exception):
     pass
+
+
+def powershell_executable():
+    for name in ("powershell.exe", "powershell", "pwsh"):
+        executable = shutil.which(name)
+        if executable:
+            return executable
+    raise JiraError("找不到 PowerShell，无法使用 Windows 系统凭据保护")
+
+
+def run_powershell(script, env=None):
+    try:
+        result = subprocess.run(
+            [
+                powershell_executable(), "-NoLogo", "-NoProfile",
+                "-Command", script,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
+        )
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or "").strip()
+        raise JiraError(f"Windows 凭据操作失败：{detail or '未知错误'}") from exc
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise JiraError("无法调用 PowerShell 完成 Windows 凭据操作") from exc
+    return result.stdout.strip()
+
+
+def protect_windows_secret(password):
+    env = os.environ.copy()
+    env["SDGH_JIRA_SECRET"] = password
+    script = (
+        "$plain=[Text.Encoding]::UTF8.GetBytes($env:SDGH_JIRA_SECRET);"
+        "$cipher=[Security.Cryptography.ProtectedData]::Protect("
+        "$plain,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);"
+        "[Convert]::ToBase64String($cipher)"
+    )
+    return run_powershell(script, env=env)
+
+
+def unprotect_windows_secret(ciphertext):
+    env = os.environ.copy()
+    env["SDGH_JIRA_SECRET_BLOB"] = ciphertext
+    script = (
+        "$cipher=[Convert]::FromBase64String($env:SDGH_JIRA_SECRET_BLOB);"
+        "$plain=[Security.Cryptography.ProtectedData]::Unprotect("
+        "$cipher,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);"
+        "[Text.Encoding]::UTF8.GetString($plain)"
+    )
+    return run_powershell(script, env=env)
 
 
 def dump(value):
@@ -128,12 +190,14 @@ def read_config(path=None):
 
 class JiraClient:
     def __init__(self, base_url, username="", password="", token="",
-                 keychain_service="", ca_bundle="", ssl_verify=True, timeout=30):
+                 keychain_service="", password_dpapi="", ca_bundle="",
+                 ssl_verify=True, timeout=30):
         self.base_url = str(base_url or "").rstrip("/")
         self.username = username or ""
         self.password = password or ""
         self.token = token or ""
         self.keychain_service = keychain_service or ""
+        self.password_dpapi = password_dpapi or ""
         self.timeout = max(1, min(int(timeout), 300))
         self.ssl_context = (
             ssl.create_default_context(cafile=ca_bundle or None)
@@ -151,6 +215,7 @@ class JiraClient:
             password=data.get("password", ""),
             token=data.get("token", ""),
             keychain_service=data.get("keychain_service", ""),
+            password_dpapi=data.get("password_dpapi", ""),
             ca_bundle=data.get("ca_bundle", ""),
             ssl_verify=data.get("ssl_verify", True),
             timeout=data.get("timeout", 30),
@@ -159,6 +224,8 @@ class JiraClient:
     def resolved_password(self):
         if self.password:
             return self.password
+        if self.password_dpapi:
+            return unprotect_windows_secret(self.password_dpapi)
         if not self.keychain_service or not self.username:
             return ""
         try:
@@ -488,43 +555,81 @@ def ask_macos_dialog(prompt, hidden=False):
     return result.stdout.rstrip("\r\n")
 
 
-def setup(url=DEFAULT_JIRA_URL, username=None, gui=False, config_path=None):
-    if sys.platform != "darwin" or not Path("/usr/bin/security").exists():
-        raise JiraError("当前一键配置仅支持 macOS")
-    if not username:
-        username = (
-            ask_macos_dialog("请输入本人 Jira 用户名")
-            if gui else input("请输入本人 Jira 用户名：").strip()
-        )
-    password = (
-        ask_macos_dialog("请输入本人 Jira 密码", hidden=True)
-        if gui else __import__("getpass").getpass("请输入本人 Jira 密码：")
+def ask_windows_credentials():
+    script = (
+        "$credential=Get-Credential -Message '请输入本人 Jira 账号和密码';"
+        "if ($null -eq $credential) { exit 2 };"
+        "$pointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR("
+        "$credential.Password);"
+        "try {"
+        "$password=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer);"
+        "@{username=$credential.UserName;password=$password} | "
+        "ConvertTo-Json -Compress"
+        "} finally {"
+        "[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)"
+        "}"
     )
+    output = run_powershell(script)
+    try:
+        credentials = json.loads(output)
+    except json.JSONDecodeError as exc:
+        raise JiraError("Windows 凭据窗口未返回有效账号信息") from exc
+    return credentials.get("username", ""), credentials.get("password", "")
+
+
+def setup(url=DEFAULT_JIRA_URL, username=None, gui=False, config_path=None,
+          system_name=None, platform_name=None):
+    is_windows = (system_name or os.name) == "nt"
+    is_macos = (platform_name or sys.platform) == "darwin"
+    if not is_windows and not is_macos:
+        raise JiraError("当前一键安全配置支持 Windows 和 macOS")
+    if is_macos and not Path("/usr/bin/security").exists():
+        raise JiraError("当前系统找不到 macOS 钥匙串工具")
+
+    if gui and is_windows:
+        dialog_username, password = ask_windows_credentials()
+        username = dialog_username or username
+    else:
+        if not username:
+            username = (
+                ask_macos_dialog("请输入本人 Jira 用户名")
+                if gui and is_macos else input("请输入本人 Jira 用户名：").strip()
+            )
+        password = (
+            ask_macos_dialog("请输入本人 Jira 密码", hidden=True)
+            if gui and is_macos
+            else __import__("getpass").getpass("请输入本人 Jira 密码：")
+        )
     if not username or not password:
         raise JiraError("Jira 用户名和密码不能为空")
     client = JiraClient(url, username=username, password=password)
     identity = whoami(client)
     if not identity.get("active"):
         raise JiraError("Jira 账号未处于启用状态")
-    host = urllib.parse.urlparse(url).hostname or "jira"
-    service = f"sdgh-jira-access:{host}"
-    subprocess.run(
-        [
-            "/usr/bin/security", "add-generic-password", "-U",
-            "-s", service, "-a", username, "-w", password,
-        ],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
     target = Path(config_path or DEFAULT_CONFIG).expanduser()
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "base_url": str(url).rstrip("/"),
         "username": username,
-        "keychain_service": service,
         "ssl_verify": True,
     }
+    if is_windows:
+        payload["password_dpapi"] = protect_windows_secret(password)
+        password_storage = "Windows DPAPI（仅当前 Windows 用户可解密）"
+    else:
+        host = urllib.parse.urlparse(url).hostname or "jira"
+        service = f"sdgh-jira-access:{host}"
+        subprocess.run(
+            [
+                "/usr/bin/security", "add-generic-password", "-U",
+                "-s", service, "-a", username, "-w", password,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        payload["keychain_service"] = service
+        password_storage = "macOS Keychain"
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", dir=target.parent, delete=False
     ) as handle:
@@ -537,7 +642,7 @@ def setup(url=DEFAULT_JIRA_URL, username=None, gui=False, config_path=None):
         "configured": True,
         "identity": identity,
         "config_path": str(target),
-        "password_storage": "macOS Keychain",
+        "password_storage": password_storage,
         "capabilities": ["查询", "详情", "创建", "修改", "评论", "指派", "状态流转"],
     }
 

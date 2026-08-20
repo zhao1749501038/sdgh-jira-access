@@ -1,5 +1,18 @@
 # Evolution — sdgh-jira-access
 
+## v1.3 — 2026-08-20
+
+**改动内容**：
+- 一键配置由 macOS 扩展为 Windows 和 macOS 双平台。
+- Windows 使用系统凭据窗口输入账号密码，并通过当前用户 DPAPI 加密保存。
+- Skill 改为由 AI 自动探测可用的 Python 3 命令，不再要求用户提供 Python 路径或固定使用 `python3`。
+
+**改动原因**：
+实际分享对象主要使用 Windows，原有 macOS 限制和固定命令会导致同事无法完成安装。
+
+**效果评估**：
+待完成跨平台单元测试、macOS 身份回读和 GitHub 远端安装验证。
+
 ## v1.2 — 2026-08-20
 
 **改动内容**：

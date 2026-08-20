@@ -1,7 +1,9 @@
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest import mock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "jira.py"
@@ -40,6 +42,53 @@ class JiraApiTests(unittest.TestCase):
         parser = jira.parser_definition()
         args = parser.parse_args(["setup", "--gui"])
         self.assertEqual(args.url, "https://21tb-jira.21tb.com")
+
+    def test_windows_config_path_uses_appdata(self):
+        path = jira.default_config_path(
+            os_name="nt",
+            environ={"APPDATA": r"C:\Users\demo\AppData\Roaming"},
+        )
+        self.assertEqual(
+            path,
+            Path(r"C:\Users\demo\AppData\Roaming") / "sdgh-jira-access" / "config.json",
+        )
+
+    def test_dpapi_secret_is_used_for_windows_config(self):
+        client = jira.JiraClient(
+            "https://jira.example",
+            username="demo",
+            password_dpapi="encrypted-value",
+        )
+        with mock.patch.object(
+            jira, "unprotect_windows_secret", return_value="secret"
+        ) as decrypt:
+            self.assertEqual(client.resolved_password(), "secret")
+        decrypt.assert_called_once_with("encrypted-value")
+
+    def test_windows_setup_stores_only_dpapi_ciphertext(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / "config.json"
+            with (
+                mock.patch.object(
+                    jira, "ask_windows_credentials", return_value=("demo", "secret")
+                ),
+                mock.patch.object(
+                    jira, "whoami", return_value={"username": "demo", "active": True}
+                ),
+                mock.patch.object(
+                    jira, "protect_windows_secret", return_value="encrypted-value"
+                ),
+            ):
+                result = jira.setup(
+                    gui=True,
+                    config_path=config_path,
+                    system_name="nt",
+                    platform_name="win32",
+                )
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["password_dpapi"], "encrypted-value")
+        self.assertNotIn("password", payload)
+        self.assertIn("Windows DPAPI", result["password_storage"])
 
     def test_issue_key_validation(self):
         self.assertEqual(jira.issue_key("demo-12"), "DEMO-12")

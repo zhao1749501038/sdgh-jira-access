@@ -8,24 +8,28 @@ description: >-
 
 通过 `scripts/jira.py` 直接调用 Jira REST API，默认连接 `https://21tb-jira.21tb.com`。这个 Skill 自带运行代码，不安装 MCP 服务。
 
+## Python 命令
+
+运行脚本前由 AI 自动探测本机可用的 Python 3 命令。Windows 依次尝试 `py -3`、`python`，macOS 依次尝试 `python3`、`python`，并确认版本为 Python 3。后续命令中的 `<Python命令>` 代表探测成功的命令。不要让用户填写 Python 路径，也不要写死绝对路径。
+
 ## 身份和配置
 
 首次使用或身份存疑时运行：
 
 ```bash
-python3 scripts/jira.py whoami
+<Python命令> scripts/jira.py whoami
 ```
 
-尚未配置时，读取 [references/安装与分享.md](references/安装与分享.md)。用户明确要求安装并配置本 Skill 时，可连续完成安装和身份配置；账号和密码由本人在 macOS 系统弹窗输入，密码框隐藏。
+尚未配置时，读取 [references/安装与分享.md](references/安装与分享.md)。用户明确要求安装并配置本 Skill 时，可连续完成安装和身份配置；账号和密码由本人在 Windows 或 macOS 系统凭据窗口输入，密码框隐藏。
 
-`whoami` 返回的用户不是当前使用者时停止写入。密码只保存在本人 macOS 钥匙串，不写入 Skill、Git、配置文件、命令行或聊天。
+`whoami` 返回的用户不是当前使用者时停止写入。Windows 密码由当前用户的 DPAPI 加密后保存，macOS 密码保存在本人钥匙串；明文密码不写入 Skill、Git、配置文件、命令行或聊天。
 
 ## 查询
 
-- 本人负责：`python3 scripts/jira.py search --jql 'assignee = currentUser() ORDER BY updated DESC'`
-- 本人创建：`python3 scripts/jira.py search --jql 'reporter = currentUser() ORDER BY updated DESC'`
-- 工单详情：`python3 scripts/jira.py get DEMO-1234`
-- 可见项目：`python3 scripts/jira.py projects`
+- 本人负责：`<Python命令> scripts/jira.py search --jql 'assignee = currentUser() ORDER BY updated DESC'`
+- 本人创建：`<Python命令> scripts/jira.py search --jql 'reporter = currentUser() ORDER BY updated DESC'`
+- 工单详情：`<Python命令> scripts/jira.py get DEMO-1234`
+- 可见项目：`<Python命令> scripts/jira.py projects`
 
 保留脚本返回的真实 Jira URL。用 Jira 内容生成其他产物时，以实时返回为准。
 
